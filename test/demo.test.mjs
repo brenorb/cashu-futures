@@ -32,7 +32,7 @@ test('mints, swaps without losing metadata, then physically settles at maturity'
   assert.equal(result.response.status, 201);
   const minted = result.body.token;
   assert.equal(minted.unit, 'future:btc-usd:20260901T000000Z');
-  assert.match(minted.termsUri, /\/api\/terms\/[0-9a-f]{64}$/);
+  assert.match(minted.termsUri, /\/[0-9a-f]{64}$/);
   assert.equal(result.body.state.lifecycle.minted, true);
 
   result = await api('/api/swap', { method: 'POST', body: JSON.stringify({ tokenId: minted.id }) });

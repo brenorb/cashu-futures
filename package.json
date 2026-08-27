@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "blossom": "blossom-server --bind 127.0.0.1:3000 --base-url http://localhost:3000 --data-dir work/blossom-data --db-path work/blossom.db --allow-anonymous-uploads --log-pretty",
     "start": "node server.mjs",
     "test": "node --test test/demo.test.mjs"
   }

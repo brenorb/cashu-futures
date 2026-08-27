@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
 const MINT_URL = `http://localhost:${PORT}`;
+const BLOSSOM_SERVER_URL = process.env.BLOSSOM_SERVER_URL || 'http://localhost:3000';
 const MINT_SECRET = 'testnut-only-secret-do-not-use-for-real-cashu';
 const WALLET_ID = 'demo-wallet';
 const UNIT = 'future:btc-usd:20260901T000000Z';
@@ -63,8 +64,8 @@ function futureTermsBlob() {
 
 function futureTerms() {
   if (!state.termsBlob) {
-    state.termsBlob = canonical(futureTermsBlob());
-    state.termsUri = `${MINT_URL}/api/terms/${sha256(state.termsBlob)}`;
+    state.termsBlob = `${canonical(futureTermsBlob())}\n`;
+    state.termsUri = `${BLOSSOM_SERVER_URL}/${sha256(state.termsBlob)}`;
   }
   return { blob: state.termsBlob, uri: state.termsUri };
 }
