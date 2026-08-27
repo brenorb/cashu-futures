@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#10100f" />
+    <link rel="icon" href="data:," />
+    <title>Cashu Futures / Testnut</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="topbar">
+      <a class="wordmark" href="/" aria-label="Cashu Futures home">
+        <span class="mark">C</span>
+        <span>CASHU<br /><em>FUTURES</em></span>
+      </a>
+      <div class="topbar-right">
+        <span class="network-dot"><i></i> TESTNUT</span>
+        <span class="mint-address" id="mint-address">loading mint…</span>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="hero reveal">
+        <div class="eyebrow"><span class="eyebrow-line"></span> NUT-32 / PHYSICAL DELIVERY</div>
+        <h1>A future you can<br /><span>actually hold.</span></h1>
+        <p class="hero-copy">
+          A tiny Cashu futures lab. Mint a BTC/USD contract, swap it without losing its terms,
+          fund the remaining leverage, then deliver the underlying at maturity.
+        </p>
+        <div class="hero-note"><span>01</span> metadata is part of the signed proof secret</div>
+      </section>
+
+      <section class="contract-grid reveal delay-1">
+        <article class="contract-card panel">
+          <div class="card-topline">
+            <span class="label">ACTIVE SERIES</span>
+            <span class="status-chip" id="maturity-chip">PRE-MATURITY</span>
+          </div>
+          <div class="contract-title-row">
+            <div>
+              <h2>BTC / USD <span>·</span> FUTURE</h2>
+              <p class="unit" id="future-unit">future:btc-usd:…</p>
+            </div>
+            <div class="contract-glyph" aria-hidden="true">↗</div>
+          </div>
+          <div class="terms-grid">
+            <div><span>STRIKE</span><strong id="strike">—</strong><small>USD / BTC</small></div>
+            <div><span>CONTRACT</span><strong id="contract-size">—</strong><small>BTC delivered</small></div>
+            <div><span>LEVERAGE</span><strong id="leverage">—</strong><small>initial margin</small></div>
+            <div><span>MATURITY</span><strong id="maturity">—</strong><small id="clock">—</small></div>
+          </div>
+          <div class="terms-link"><span>TERMS URI</span><code id="terms-uri">—</code><button class="copy-btn" id="copy-terms" type="button">COPY</button></div>
+        </article>
+
+        <aside class="action-panel panel">
+          <div class="card-topline"><span class="label">POSITION CONTROL</span><span class="live"><i></i> LIVE</span></div>
+          <div class="action-stack">
+            <button class="action primary" id="mint-btn" type="button">
+              <span><b>Mint future</b><small>lock initial margin</small></span><strong>→</strong>
+            </button>
+            <button class="action" id="swap-btn" type="button" disabled>
+              <span><b>Swap future</b><small>preserve signed metadata</small></span><strong>↻</strong>
+            </button>
+            <button class="action" id="leverage-btn" type="button" disabled>
+              <span><b>Pay remaining leverage</b><small id="leverage-caption">—</small></span><strong>+</strong>
+            </button>
+            <button class="action warning" id="advance-btn" type="button">
+              <span><b>Advance testnut clock</b><small>jump to maturity</small></span><strong>⌁</strong>
+            </button>
+            <button class="action settle" id="settle-btn" type="button" disabled>
+              <span><b>Settle into BTC</b><small>physical delivery after maturity</small></span><strong>↘</strong>
+            </button>
+          </div>
+          <p class="action-feedback" id="feedback" role="status">Ready. Mint a one-unit test future.</p>
+        </aside>
+      </section>
+
+      <section class="lifecycle panel reveal delay-2" aria-label="Future lifecycle">
+        <div class="lifecycle-heading"><span class="label">CONTRACT LIFECYCLE</span><span id="lifecycle-state">WAITING FOR MINT</span></div>
+        <div class="lifecycle-track">
+          <div class="lifecycle-step" data-step="mint"><span>01</span><strong>Mint</strong><small>initial margin</small></div>
+          <i class="lifecycle-line"></i>
+          <div class="lifecycle-step" data-step="swap"><span>02</span><strong>Swap</strong><small>keep future tag</small></div>
+          <i class="lifecycle-line"></i>
+          <div class="lifecycle-step" data-step="fund"><span>03</span><strong>Fund</strong><small>remaining leverage</small></div>
+          <i class="lifecycle-line"></i>
+          <div class="lifecycle-step" data-step="mature"><span>04</span><strong>Mature</strong><small>clock reaches date</small></div>
+          <i class="lifecycle-line"></i>
+          <div class="lifecycle-step" data-step="settle"><span>05</span><strong>Settle</strong><small>future → sat</small></div>
+        </div>
+      </section>
+
+      <section class="lower-grid reveal delay-2">
+        <article class="wallet-panel panel">
+          <div class="section-heading"><div><span class="label">WEB WALLET</span><h2>Positions & reserves</h2></div><span class="wallet-id">#demo-wallet</span></div>
+          <div class="balance-row">
+            <div class="balance"><span>AVAILABLE BTC</span><strong id="sat-balance">—</strong><small>sat</small></div>
+            <div class="balance locked"><span>LOCKED MARGIN</span><strong id="locked-margin">—</strong><small>sat</small></div>
+            <div class="balance"><span>FUTURE UNITS</span><strong id="future-balance">—</strong><small>contracts</small></div>
+          </div>
+          <div class="token-list" id="token-list"></div>
+        </article>
+
+        <article class="log-panel panel">
+          <div class="section-heading"><div><span class="label">EVENT STREAM</span><h2>What just happened</h2></div><span class="pulse"></span></div>
+          <div class="activity" id="activity"></div>
+        </article>
+      </section>
+
+      <section class="explain reveal delay-3">
+        <div class="explain-number">NUT<br />32</div>
+        <div><span class="label">THE IMPORTANT PART</span><p>Swapping a future creates a new Cashu proof, but the <code>future</code> tag still points to the same content-addressed terms blob. Settlement is the only path that changes the unit—from the future series to <code>sat</code>.</p></div>
+        <div class="testnet-warning"><span>!</span><p>This is a deterministic local testnut. It uses demo signatures and fake BTC. Do not fund it.</p></div>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
