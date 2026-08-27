@@ -10,22 +10,45 @@ const MINT_URL = `http://localhost:${PORT}`;
 const BLOSSOM_SERVER_URL = process.env.BLOSSOM_SERVER_URL || 'http://localhost:3000';
 const MINT_SECRET = 'testnut-only-secret-do-not-use-for-real-cashu';
 const WALLET_ID = 'demo-wallet';
-const UNIT = 'future:mb-btc:20260901T000000Z';
-const MATURITY = new Date('2026-09-01T00:00:00Z');
-
-const TERMS = {
-  unit: UNIT,
-  strike_btc_per_mb: '0.00010',
-  contract_size_mb: '1',
-  contract_size_sat: 10000,
-  leverage: 5,
-  initial_margin_sat: 2000,
-  remaining_margin_sat: 8000,
-  settlement_unit: 'sat',
-  settlement_method: 'physical',
-  price_source: 'testnut-fixed-mb-btc',
-  maturity: '2026-09-01T00:00:00Z',
-};
+const SERIES = [
+  {
+    id: 'sep-2026',
+    unit: 'future:mb-btc:20260901T000000Z',
+    terms: {
+      unit: 'future:mb-btc:20260901T000000Z',
+      strike_btc_per_mb: '0.00010',
+      contract_size_mb: '1',
+      contract_size_sat: 10000,
+      leverage: 5,
+      initial_margin_sat: 2000,
+      remaining_margin_sat: 8000,
+      settlement_unit: 'sat',
+      settlement_method: 'physical',
+      price_source: 'testnut-fixed-mb-btc',
+      maturity: '2026-09-01T00:00:00Z',
+    },
+  },
+  {
+    id: 'oct-2026',
+    unit: 'future:mb-btc:20261001T000000Z',
+    terms: {
+      unit: 'future:mb-btc:20261001T000000Z',
+      strike_btc_per_mb: '0.00011',
+      contract_size_mb: '1',
+      contract_size_sat: 11000,
+      leverage: 5,
+      initial_margin_sat: 2200,
+      remaining_margin_sat: 8800,
+      settlement_unit: 'sat',
+      settlement_method: 'physical',
+      price_source: 'testnut-fixed-mb-btc',
+      maturity: '2026-10-01T00:00:00Z',
+    },
+  },
+];
+const DEFAULT_SERIES = SERIES[0];
+const UNIT = DEFAULT_SERIES.unit;
+const TERMS = DEFAULT_SERIES.terms;
 
 const state = {
   now: new Date('2026-08-27T12:00:00Z'),
@@ -57,17 +80,23 @@ function sign(value) {
   return createHmac('sha256', MINT_SECRET).update(value).digest('hex');
 }
 
-function futureTermsBlob() {
-  const signed = { mint: MINT_URL, terms: TERMS };
+function futureTermsBlob(series) {
+  const signed = { mint: MINT_URL, terms: series.terms };
   return { ...signed, signature: sign(canonical(signed)) };
 }
 
-function futureTerms() {
-  if (!state.termsBlob) {
-    state.termsBlob = `${canonical(futureTermsBlob())}\n`;
-    state.termsUri = `${BLOSSOM_SERVER_URL}/${sha256(state.termsBlob)}`;
+function futureTerms(series = DEFAULT_SERIES) {
+  if (!series.termsBlob) {
+    series.termsBlob = `${canonical(futureTermsBlob(series))}\n`;
+    series.termsUri = `${BLOSSOM_SERVER_URL}/${sha256(series.termsBlob)}`;
   }
-  return { blob: state.termsBlob, uri: state.termsUri };
+  return { blob: series.termsBlob, uri: series.termsUri };
+}
+
+function seriesForUnit(unit) {
+  const series = SERIES.find((item) => item.unit === unit);
+  if (!series) throw new Error('Unknown future series');
+  return series;
 }
 
 function futureSecret(termsUri) {
@@ -123,6 +152,10 @@ function resetDemo() {
   state.now = new Date('2026-08-27T12:00:00Z');
   state.wallets = new Map([[WALLET_ID, { id: WALLET_ID, satBalance: 250000, tokenIds: [] }]]);
   state.tokens = new Map();
+  SERIES.forEach((series) => {
+    delete series.termsBlob;
+    delete series.termsUri;
+  });
   state.termsBlob = null;
   state.termsUri = null;
   state.reserveTokenId = null;
@@ -131,7 +164,7 @@ function resetDemo() {
   const ordinary = makeToken('sat', 250000, { memo: 'testnut BTC reserve' });
   state.reserveTokenId = addToken(WALLET_ID, ordinary, { kind: 'btc' }).id;
   addActivity('Wallet loaded with 250,000 sat testnut reserve', 'positive');
-  futureTerms();
+  SERIES.forEach((series) => futureTerms(series));
 }
 
 function syncReserveToken() {
@@ -155,6 +188,7 @@ function tokenSummary(record) {
   return {
     id: record.id,
     kind: record.kind || (future ? 'future' : 'btc'),
+    seriesId: record.seriesId || null,
     unit: record.token.unit,
     amount: record.token.amount,
     termsUri,
@@ -167,9 +201,21 @@ function publicState() {
   const records = wallet().tokenIds.map((id) => state.tokens.get(id)).filter(Boolean);
   const futureRecords = records.filter((record) => record.token.unit.startsWith('future:'));
   const locked = futureRecords.reduce(
-    (sum, record) => sum + (record.leveragePaid ? 100000 : 20000) * record.token.amount,
+    (sum, record) => {
+      const terms = seriesForUnit(record.token.unit).terms;
+      return sum + (record.leveragePaid ? terms.initial_margin_sat + terms.remaining_margin_sat : terms.initial_margin_sat) * record.token.amount;
+    },
     0,
   );
+  const series = SERIES.map((item) => ({
+    id: item.id,
+    unit: item.unit,
+    termsUri: futureTerms(item).uri,
+    terms: item.terms,
+    maturity: item.terms.maturity,
+    matured: state.now >= new Date(item.terms.maturity),
+    now: state.now.toISOString(),
+  }));
   return {
     mint: { name: 'testnut / cashu-futures', url: MINT_URL, network: 'testnet simulation' },
     wallet: {
@@ -180,12 +226,13 @@ function publicState() {
     },
     future: {
       unit: UNIT,
-      termsUri: futureTerms().uri,
+      termsUri: futureTerms(DEFAULT_SERIES).uri,
       terms: TERMS,
       maturity: TERMS.maturity,
-      matured: state.now >= MATURITY,
+      matured: state.now >= new Date(TERMS.maturity),
       now: state.now.toISOString(),
     },
+    series,
     lifecycle: state.lifecycle,
     activity: state.activity,
   };
@@ -216,8 +263,9 @@ async function handleApi(req, res, url) {
   }
   if (req.method === 'GET' && url.pathname.startsWith('/api/terms/')) {
     const hash = url.pathname.split('/').pop();
-    const terms = futureTerms();
-    if (hash !== terms.uri.split('/').pop()) return jsonResponse(res, 404, { error: 'Terms not found' });
+    const series = SERIES.find((item) => futureTerms(item).uri.split('/').pop() === hash);
+    if (!series) return jsonResponse(res, 404, { error: 'Terms not found' });
+    const terms = futureTerms(series);
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=31536000, immutable' });
     return res.end(terms.blob);
   }
@@ -227,12 +275,14 @@ async function handleApi(req, res, url) {
   if (url.pathname === '/api/future/mint') {
     const amount = Number(body.amount || 1);
     if (!Number.isSafeInteger(amount) || amount < 1) throw new Error('Amount must be a positive integer');
-    const required = TERMS.initial_margin_sat * amount;
+    const series = SERIES.find((item) => item.id === body.series) || DEFAULT_SERIES;
+    const required = series.terms.initial_margin_sat * amount;
     if (wallet().satBalance < required) throw new Error(`Insufficient sat balance for ${required} sat initial margin`);
     wallet().satBalance -= required;
     syncReserveToken();
-    const record = addToken(WALLET_ID, makeToken(UNIT, amount, { termsUri: futureTerms().uri, memo: 'testnut MB/BTC future' }), {
+    const record = addToken(WALLET_ID, makeToken(series.unit, amount, { termsUri: futureTerms(series).uri, memo: 'testnut MB/BTC future' }), {
       kind: 'future',
+      seriesId: series.id,
       leveragePaid: false,
     });
     state.lifecycle.minted = true;
@@ -242,16 +292,17 @@ async function handleApi(req, res, url) {
   if (url.pathname === '/api/swap') {
     const old = findToken(body.tokenId);
     const isFuture = old.token.unit.startsWith('future:');
+    const series = isFuture ? seriesForUnit(old.token.unit) : null;
     if (isFuture) {
       const tag = old.token.proofs[0].secret.match(/\[\["future","1","([^"]+)"\]\]/);
-      if (!tag || tag[1] !== futureTerms().uri) throw new Error('Future metadata is missing or has changed');
+      if (!tag || tag[1] !== futureTerms(series).uri) throw new Error('Future metadata is missing or has changed');
     }
     state.tokens.delete(old.id);
     wallet().tokenIds = wallet().tokenIds.filter((id) => id !== old.id);
     const replacement = addToken(WALLET_ID, makeToken(old.token.unit, old.token.amount, {
-      termsUri: isFuture ? futureTerms().uri : undefined,
+      termsUri: series ? futureTerms(series).uri : undefined,
       memo: old.token.memo,
-    }), { kind: old.kind, leveragePaid: old.leveragePaid });
+    }), { kind: old.kind, seriesId: old.seriesId, leveragePaid: old.leveragePaid });
     state.lifecycle.swapped = isFuture;
     addActivity(`Swapped ${old.token.unit}; future terms URI preserved`, 'positive');
     return jsonResponse(res, 200, {
@@ -265,7 +316,7 @@ async function handleApi(req, res, url) {
     const record = findToken(body.tokenId);
     if (!record.token.unit.startsWith('future:')) throw new Error('Token is not a future');
     if (record.leveragePaid) throw new Error('Remaining leverage is already paid');
-    const required = TERMS.remaining_margin_sat * record.token.amount;
+    const required = seriesForUnit(record.token.unit).terms.remaining_margin_sat * record.token.amount;
     if (wallet().satBalance < required) throw new Error(`Insufficient sat balance for ${required} sat remaining margin`);
     wallet().satBalance -= required;
     syncReserveToken();
@@ -275,7 +326,7 @@ async function handleApi(req, res, url) {
     return jsonResponse(res, 200, { token: tokenSummary(record), state: publicState() });
   }
   if (url.pathname === '/api/time/advance') {
-    state.now = new Date(MATURITY);
+    state.now = new Date(DEFAULT_SERIES.terms.maturity);
     state.lifecycle.matured = true;
     addActivity('Testnut clock advanced to maturity', 'warning');
     return jsonResponse(res, 200, { state: publicState() });
@@ -283,11 +334,12 @@ async function handleApi(req, res, url) {
   if (url.pathname === '/api/future/settle') {
     const old = findToken(body.tokenId);
     if (!old.token.unit.startsWith('future:')) throw new Error('Token is not a future');
-    if (state.now < MATURITY) throw new Error('Future has not reached maturity');
+    const terms = seriesForUnit(old.token.unit).terms;
+    if (state.now < new Date(terms.maturity)) throw new Error('Future has not reached maturity');
     if (!old.leveragePaid) throw new Error('Pay the remaining leverage before settlement');
     state.tokens.delete(old.id);
     wallet().tokenIds = wallet().tokenIds.filter((id) => id !== old.id);
-    const amount = TERMS.contract_size_sat * old.token.amount;
+    const amount = terms.contract_size_sat * old.token.amount;
     wallet().satBalance += amount;
     syncReserveToken();
     const settled = addToken(WALLET_ID, makeToken('sat', amount, { memo: 'physical BTC delivery from future' }), {

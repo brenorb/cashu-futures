@@ -55,7 +55,7 @@
         </article>
 
         <aside class="action-panel panel">
-          <div class="card-topline"><span class="label">POSITION CONTROL</span><span class="live"><i></i> LIVE</span></div>
+          <div class="card-topline"><span class="label">POSITION CONTROL</span><span class="live"><i></i> <span id="selected-series">SEP 2026</span></span></div>
           <div class="action-stack">
             <button class="action primary" id="mint-btn" type="button">
               <span><b>Mint future</b><small>lock initial margin</small></span><strong>→</strong>
@@ -75,6 +75,11 @@
           </div>
           <p class="action-feedback" id="feedback" role="status">Ready. Mint a one-unit test future.</p>
         </aside>
+      </section>
+
+      <section class="series-board panel reveal delay-1" aria-label="Available future series">
+        <div class="section-heading"><div><span class="label">SERIES BOARD</span><h2>Choose a maturity</h2></div><span class="wallet-id">2 MB/BTC SERIES</span></div>
+        <div class="series-list" id="series-list"></div>
       </section>
 
       <section class="lifecycle panel reveal delay-2" aria-label="Future lifecycle">

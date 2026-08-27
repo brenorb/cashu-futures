@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 let snapshot;
+let selectedSeriesId = 'sep-2026';
 
 function formatNumber(value) {
   return Number(value).toLocaleString('en-US');
@@ -10,8 +11,13 @@ function shortUri(uri) {
   return `${uri.slice(0, 30)}…${uri.slice(-12)}`;
 }
 
+function activeSeries() {
+  return snapshot.series.find((series) => series.id === selectedSeriesId) || snapshot.series[0];
+}
+
 function futureToken() {
-  return snapshot.wallet.tokens.find((token) => token.kind === 'future');
+  const series = activeSeries();
+  return snapshot.wallet.tokens.find((token) => token.kind === 'future' && token.unit === series.unit);
 }
 
 function setFeedback(message, tone = 'neutral') {
@@ -21,7 +27,8 @@ function setFeedback(message, tone = 'neutral') {
 }
 
 function render() {
-  const { wallet, future, mint, lifecycle } = snapshot;
+  const { wallet, mint, lifecycle } = snapshot;
+  const future = activeSeries();
   const token = futureToken();
   $('mint-address').textContent = mint.url;
   $('future-unit').textContent = future.unit;
@@ -43,6 +50,12 @@ function render() {
   $('leverage-btn').disabled = !token || token.leveragePaid;
   $('settle-btn').disabled = !token || !future.matured || !token.leveragePaid;
   $('advance-btn').disabled = future.matured;
+  $('selected-series').textContent = future.id.replace('-', ' ').toUpperCase();
+  $('series-list').innerHTML = snapshot.series.map((series) => `<button class="series-row ${series.id === selectedSeriesId ? 'selected' : ''}" data-series-id="${series.id}" type="button">
+    <span class="series-date">${new Date(series.maturity).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}</span>
+    <span class="series-main"><strong>${series.unit}</strong><small>${series.terms.strike_btc_per_mb} BTC / MB · ${series.terms.contract_size_mb} MB</small></span>
+    <span class="series-status">${series.matured ? 'MATURED' : 'OPEN'}</span>
+  </button>`).join('');
   const steps = ['mint', 'swap', 'fund', 'mature', 'settle'];
   const keys = { mint: 'minted', swap: 'swapped', fund: 'funded', mature: 'matured', settle: 'settled' };
   const firstPending = steps.findIndex((step) => !lifecycle[keys[step]]);
@@ -91,14 +104,22 @@ async function runAction(path, message, body) {
   }
 }
 
-$('mint-btn').addEventListener('click', () => runAction('/api/future/mint', 'Creating a signed future proof…', { amount: 1 }));
+$('mint-btn').addEventListener('click', () => runAction('/api/future/mint', 'Creating a signed future proof…', { amount: 1, series: selectedSeriesId }));
 $('swap-btn').addEventListener('click', () => runAction('/api/swap', 'Swapping proof; checking metadata continuity…', { tokenId: futureToken()?.id }));
 $('leverage-btn').addEventListener('click', () => runAction('/api/future/leverage', 'Paying the remaining delivery margin…', { tokenId: futureToken()?.id }));
 $('advance-btn').addEventListener('click', () => runAction('/api/time/advance', 'Advancing the deterministic testnut clock…'));
 $('settle-btn').addEventListener('click', () => runAction('/api/future/settle', 'Settling future into physical BTC token…', { tokenId: futureToken()?.id }));
 $('copy-terms').addEventListener('click', async () => {
-  await navigator.clipboard.writeText(snapshot.future.termsUri);
+  await navigator.clipboard.writeText(activeSeries().termsUri);
   setFeedback('Terms URI copied.', 'positive');
+});
+
+$('series-list').addEventListener('click', (event) => {
+  const row = event.target.closest('[data-series-id]');
+  if (!row) return;
+  selectedSeriesId = row.dataset.seriesId;
+  render();
+  setFeedback(`Selected ${selectedSeriesId.replace('-', ' ')} series.`);
 });
 
 refresh().catch((error) => setFeedback(error.message, 'error'));

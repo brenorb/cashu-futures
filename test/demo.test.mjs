@@ -27,6 +27,15 @@ test('mints, swaps without losing metadata, then physically settles at maturity'
   assert.equal(result.body.wallet.satBalance, 250000);
   assert.equal(result.body.future.matured, false);
   assert.equal(result.body.lifecycle.minted, false);
+  assert.deepEqual(result.body.series.map((series) => series.unit), [
+    'future:mb-btc:20260901T000000Z',
+    'future:mb-btc:20261001T000000Z',
+  ]);
+  assert.notEqual(result.body.series[0].termsUri, result.body.series[1].termsUri);
+
+  result = await api('/api/future/mint', { method: 'POST', body: JSON.stringify({ amount: 1, series: 'oct-2026' }) });
+  assert.equal(result.response.status, 201);
+  assert.equal(result.body.token.unit, 'future:mb-btc:20261001T000000Z');
 
   result = await api('/api/future/mint', { method: 'POST', body: JSON.stringify({ amount: 1 }) });
   assert.equal(result.response.status, 201);
