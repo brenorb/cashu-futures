@@ -31,7 +31,12 @@ test('mints, swaps without losing metadata, then physically settles at maturity'
     'future:mb-btc:20260901T000000Z',
     'future:mb-btc:20261001T000000Z',
   ]);
+  assert.match(result.body.series[0].termsUri, /^https:\/\/blossom\.primal\.net\/[0-9a-f]{64}\.json$/);
+  assert.match(result.body.series[1].termsUri, /^https:\/\/blossom\.primal\.net\/[0-9a-f]{64}\.json$/);
   assert.notEqual(result.body.series[0].termsUri, result.body.series[1].termsUri);
+  const localTerms = await fetch(`${base}/api/terms/${new URL(result.body.series[0].termsUri).pathname.split('/').pop()}`);
+  assert.equal(localTerms.status, 200);
+  assert.equal((await localTerms.json()).terms.unit, 'future:mb-btc:20260901T000000Z');
 
   result = await api('/api/future/mint', { method: 'POST', body: JSON.stringify({ amount: 1, series: 'oct-2026' }) });
   assert.equal(result.response.status, 201);
@@ -41,7 +46,7 @@ test('mints, swaps without losing metadata, then physically settles at maturity'
   assert.equal(result.response.status, 201);
   const minted = result.body.token;
   assert.equal(minted.unit, 'future:mb-btc:20260901T000000Z');
-  assert.match(minted.termsUri, /\/[0-9a-f]{64}$/);
+  assert.match(minted.termsUri, /\/[0-9a-f]{64}\.json$/);
   assert.equal(result.body.state.lifecycle.minted, true);
 
   result = await api('/api/swap', { method: 'POST', body: JSON.stringify({ tokenId: minted.id }) });

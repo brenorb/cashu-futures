@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
 const MINT_URL = `http://localhost:${PORT}`;
-const BLOSSOM_SERVER_URL = process.env.BLOSSOM_SERVER_URL || 'http://localhost:3000';
+const BLOSSOM_SERVER_URL = process.env.BLOSSOM_SERVER_URL || 'https://blossom.primal.net';
+const BLOSSOM_PATH_SUFFIX = process.env.BLOSSOM_PATH_SUFFIX || '.json';
 const MINT_SECRET = 'testnut-only-secret-do-not-use-for-real-cashu';
 const WALLET_ID = 'demo-wallet';
 const SERIES = [
@@ -88,7 +89,7 @@ function futureTermsBlob(series) {
 function futureTerms(series = DEFAULT_SERIES) {
   if (!series.termsBlob) {
     series.termsBlob = `${canonical(futureTermsBlob(series))}\n`;
-    series.termsUri = `${BLOSSOM_SERVER_URL}/${sha256(series.termsBlob)}`;
+    series.termsUri = `${BLOSSOM_SERVER_URL}/${sha256(series.termsBlob)}${BLOSSOM_PATH_SUFFIX}`;
   }
   return { blob: series.termsBlob, uri: series.termsUri };
 }
@@ -262,8 +263,8 @@ async function handleApi(req, res, url) {
     return jsonResponse(res, 200, publicState());
   }
   if (req.method === 'GET' && url.pathname.startsWith('/api/terms/')) {
-    const hash = url.pathname.split('/').pop();
-    const series = SERIES.find((item) => futureTerms(item).uri.split('/').pop() === hash);
+    const hash = url.pathname.split('/').pop().replace(/\.json$/, '');
+    const series = SERIES.find((item) => sha256(futureTerms(item).blob) === hash);
     if (!series) return jsonResponse(res, 404, { error: 'Terms not found' });
     const terms = futureTerms(series);
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'public, max-age=31536000, immutable' });
