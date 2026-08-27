@@ -16,7 +16,7 @@ npm start
 Run `npm run blossom` and `npm start` in separate terminals, then open
 <http://localhost:8787>. The page shows the contract terms, wallet
 tokens, event stream, and lifecycle: mint → swap → pay leverage → maturity →
-physical settlement into a `sat` token.
+physical settlement of MB into a `sat` token representing BTC.
 
 The demo terms blob is uploaded to the local Blossom server with
 `uvx blossom-cli`; its content-addressed URL is used in the future proof tag.

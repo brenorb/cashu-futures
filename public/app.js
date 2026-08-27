@@ -26,8 +26,8 @@ function render() {
   $('mint-address').textContent = mint.url;
   $('future-unit').textContent = future.unit;
   $('terms-uri').textContent = shortUri(future.termsUri);
-  $('strike').textContent = `$${formatNumber(future.terms.strike_usd)}`;
-  $('contract-size').textContent = future.terms.contract_size_btc;
+  $('strike').textContent = `${future.terms.strike_btc_per_mb} BTC`;
+  $('contract-size').textContent = future.terms.contract_size_mb;
   $('leverage').textContent = `${future.terms.leverage}×`;
   $('maturity').textContent = new Date(future.maturity).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
   $('clock').textContent = `clock ${new Date(future.now).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}`;

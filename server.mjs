@@ -10,20 +10,20 @@ const MINT_URL = `http://localhost:${PORT}`;
 const BLOSSOM_SERVER_URL = process.env.BLOSSOM_SERVER_URL || 'http://localhost:3000';
 const MINT_SECRET = 'testnut-only-secret-do-not-use-for-real-cashu';
 const WALLET_ID = 'demo-wallet';
-const UNIT = 'future:btc-usd:20260901T000000Z';
+const UNIT = 'future:mb-btc:20260901T000000Z';
 const MATURITY = new Date('2026-09-01T00:00:00Z');
 
 const TERMS = {
   unit: UNIT,
-  strike_usd: '100000',
-  contract_size_btc: '0.001',
-  contract_size_sat: 100000,
+  strike_btc_per_mb: '0.00010',
+  contract_size_mb: '1',
+  contract_size_sat: 10000,
   leverage: 5,
-  initial_margin_sat: 20000,
-  remaining_margin_sat: 80000,
+  initial_margin_sat: 2000,
+  remaining_margin_sat: 8000,
   settlement_unit: 'sat',
   settlement_method: 'physical',
-  price_source: 'testnut-fixed-btc-usd',
+  price_source: 'testnut-fixed-mb-btc',
   maturity: '2026-09-01T00:00:00Z',
 };
 
@@ -231,7 +231,7 @@ async function handleApi(req, res, url) {
     if (wallet().satBalance < required) throw new Error(`Insufficient sat balance for ${required} sat initial margin`);
     wallet().satBalance -= required;
     syncReserveToken();
-    const record = addToken(WALLET_ID, makeToken(UNIT, amount, { termsUri: futureTerms().uri, memo: 'testnut BTC/USD future' }), {
+    const record = addToken(WALLET_ID, makeToken(UNIT, amount, { termsUri: futureTerms().uri, memo: 'testnut MB/BTC future' }), {
       kind: 'future',
       leveragePaid: false,
     });

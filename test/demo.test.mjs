@@ -31,7 +31,7 @@ test('mints, swaps without losing metadata, then physically settles at maturity'
   result = await api('/api/future/mint', { method: 'POST', body: JSON.stringify({ amount: 1 }) });
   assert.equal(result.response.status, 201);
   const minted = result.body.token;
-  assert.equal(minted.unit, 'future:btc-usd:20260901T000000Z');
+  assert.equal(minted.unit, 'future:mb-btc:20260901T000000Z');
   assert.match(minted.termsUri, /\/[0-9a-f]{64}$/);
   assert.equal(result.body.state.lifecycle.minted, true);
 
@@ -59,7 +59,7 @@ test('mints, swaps without losing metadata, then physically settles at maturity'
   result = await api('/api/future/settle', { method: 'POST', body: JSON.stringify({ tokenId: swapped.id }) });
   assert.equal(result.response.status, 200);
   assert.equal(result.body.token.unit, 'sat');
-  assert.equal(result.body.token.amount, 100000);
-  assert.equal(result.body.token.settledFrom, 'future:btc-usd:20260901T000000Z');
+  assert.equal(result.body.token.amount, 10000);
+  assert.equal(result.body.token.settledFrom, 'future:mb-btc:20260901T000000Z');
   assert.equal(result.body.state.lifecycle.settled, true);
 });

@@ -46,7 +46,7 @@ reject lowercase `t`/`z`, offsets, fractional seconds, and impossible dates.
 For example:
 
 ```text
-future:btc-usd:20021225T000000Z
+future:mb-btc:20021225T000000Z
 ```
 
 The maturity in `unit` identifies the series. It is not a general Cashu token
@@ -79,11 +79,11 @@ The blob at `terms_uri` is a UTF-8 canonical JSON signed envelope:
   "signature": "<signature over canonical JSON of terms and mint>",
   "terms": {
     "contract_size": "1",
-    "oracle": "https://oracle.example/btc-usd",
-    "settlement_method": "cash",
+    "oracle": "https://oracle.example/mb-btc",
+    "settlement_method": "physical",
     "settlement_unit": "sat",
-    "strike": "100000",
-    "unit": "future:btc-usd:20021225T000000Z"
+    "strike": "0.00010",
+    "unit": "future:mb-btc:20021225T000000Z"
   }
 }
 ```
@@ -148,12 +148,12 @@ not an immutable terms commitment.
 ## Minimal test vector
 
 ```text
-unit: future:btc-usd:20021225T000000Z
+unit: future:mb-btc:20021225T000000Z
 amount: 3
 future tag: ["future", "1", "https://blossom.example/..."]
-terms.unit: future:btc-usd:20021225T000000Z
+terms.unit: future:mb-btc:20021225T000000Z
 ```
 
-This represents three contracts of one future series. The quantity of BTC (or
+This represents three contracts of one future series. The quantity of MB (or
 the settlement payoff) is defined by `contract_size` and the payoff rule in
 the signed terms blob, not by a second Cashu amount field.
