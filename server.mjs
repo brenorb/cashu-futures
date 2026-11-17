@@ -304,6 +304,8 @@ async function handleApi(req, res, url) {
       termsUri: series ? futureTerms(series).uri : undefined,
       memo: old.token.memo,
     }), { kind: old.kind, seriesId: old.seriesId, leveragePaid: old.leveragePaid });
+    // The reserve token mirrors satBalance; its replacement must stay linked.
+    if (old.id === state.reserveTokenId) state.reserveTokenId = replacement.id;
     state.lifecycle.swapped = isFuture;
     addActivity(`Swapped ${old.token.unit}; future terms URI preserved`, 'positive');
     return jsonResponse(res, 200, {
