@@ -49,7 +49,7 @@ function render() {
   $('swap-btn').disabled = !token;
   $('leverage-btn').disabled = !token || token.leveragePaid;
   $('settle-btn').disabled = !token || !future.matured || !token.leveragePaid;
-  $('advance-btn').disabled = future.matured;
+  $('advance-btn').disabled = snapshot.series.every((series) => series.matured);
   $('selected-series').textContent = future.id.replace('-', ' ').toUpperCase();
   $('series-list').innerHTML = snapshot.series.map((series) => `<button class="series-row ${series.id === selectedSeriesId ? 'selected' : ''}" data-series-id="${series.id}" type="button">
     <span class="series-date">${new Date(series.maturity).toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}</span>

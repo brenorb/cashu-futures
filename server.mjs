@@ -327,9 +327,15 @@ async function handleApi(req, res, url) {
     return jsonResponse(res, 200, { token: tokenSummary(record), state: publicState() });
   }
   if (url.pathname === '/api/time/advance') {
-    state.now = new Date(DEFAULT_SERIES.terms.maturity);
+    // Step to the next maturity so every series can reach settlement.
+    const next = SERIES
+      .map((item) => new Date(item.terms.maturity))
+      .filter((maturity) => maturity > state.now)
+      .sort((left, right) => left - right)[0];
+    if (!next) throw new Error('Every series has already reached maturity');
+    state.now = next;
     state.lifecycle.matured = true;
-    addActivity('Testnut clock advanced to maturity', 'warning');
+    addActivity(`Testnut clock advanced to ${next.toISOString().slice(0, 10)} maturity`, 'warning');
     return jsonResponse(res, 200, { state: publicState() });
   }
   if (url.pathname === '/api/future/settle') {
