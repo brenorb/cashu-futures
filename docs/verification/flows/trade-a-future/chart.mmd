@@ -1,0 +1,26 @@
+---
+title: "Hold a future to settlement"
+---
+stateDiagram-v2
+  direction LR
+  state "At the same time" as all {
+    state "Contract" as r0 {
+      s0: Choose a series
+      s1: Holding, initial margin locked
+      s2: Not enough sat for margin
+      s3: Holding, fully margined
+      s4: BTC delivered as a sat token
+      [*] --> s0
+      s0 --> s1: you mint a future
+      s0 --> s2: your balance is below the margin
+      s1 --> s3: you pay the remaining margin
+      s3 --> s4: you settle [when Matured]
+    }
+    --
+    state "Clock" as r1 {
+      s5: Before maturity
+      s6: Matured
+      [*] --> s5
+      s5 --> s6: the testnut clock reaches maturity
+    }
+  }
