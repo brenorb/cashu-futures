@@ -341,8 +341,8 @@ async function handleApi(req, res, url) {
     state.tokens.delete(old.id);
     wallet().tokenIds = wallet().tokenIds.filter((id) => id !== old.id);
     const amount = terms.contract_size_sat * old.token.amount;
-    wallet().satBalance += amount;
-    syncReserveToken();
+    // The delivery token below is the payout. Crediting satBalance as well
+    // would show the same sat twice: once in the reserve token, once here.
     const settled = addToken(WALLET_ID, makeToken('sat', amount, { memo: 'physical BTC delivery from future' }), {
       kind: 'btc',
       settledFrom: old.token.unit,
